@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="pt-BR" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title><%= title || 'Simulador do Caos' %></title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <style>
+      body {
+        min-height: 100vh;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(13, 110, 253, 0.25),
+            transparent 35%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(220, 53, 69, 0.22),
+            transparent 35%
+          ),
+          #0b0f19;
+      }
+
+      .navbar {
+        backdrop-filter: blur(12px);
+        background: rgba(10, 15, 25, 0.85) !important;
+      }
+
+      .hero {
+        padding: 72px 0 48px;
+      }
+
+      .hero-card {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 24px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(16px);
+      }
+
+      .badge-soft {
+        background: rgba(13, 110, 253, 0.15);
+        color: #8bbcff;
+        border: 1px solid rgba(13, 110, 253, 0.35);
+      }
+
+      .action-card {
+        height: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.055);
+        border-radius: 18px;
+        transition:
+          transform 0.18s ease,
+          border-color 0.18s ease,
+          background 0.18s ease;
+      }
+
+      .action-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(13, 110, 253, 0.5);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .action-icon {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: rgba(13, 110, 253, 0.16);
+        font-size: 1.4rem;
+      }
+
+      .danger-icon {
+        background: rgba(220, 53, 69, 0.16);
+      }
+
+      .warning-icon {
+        background: rgba(255, 193, 7, 0.16);
+      }
+
+      .success-icon {
+        background: rgba(25, 135, 84, 0.16);
+      }
+
+      #liveAlertPlaceholder {
+        position: fixed;
+        top: 88px;
+        right: 24px;
+        z-index: 2000;
+        width: min(420px, calc(100% - 48px));
+      }
+
+      .btn {
+        border-radius: 12px;
+        font-weight: 600;
+      }
+
+      footer {
+        color: rgba(255, 255, 255, 0.55);
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <nav
+        class="navbar navbar-expand-lg navbar-dark border-bottom border-secondary-subtle"
+      >
+        <div class="container">
+          <a href="/" class="navbar-brand d-flex align-items-center gap-2">
+            <span class="fs-4">⚡</span>
+            <strong><%= title || 'Simulador do Caos' %></strong>
+          </a>
+
+          <span class="badge rounded-pill badge-soft"> Chaos Simulator </span>
+        </div>
+      </nav>
+    </header>
+
+    <div id="liveAlertPlaceholder"></div>
+
+    <main class="container">
+      <section class="hero text-center">
+        <div class="hero-card p-4 p-md-5">
+          <span class="badge rounded-pill text-bg-primary mb-3">
+            Resiliência • Kubernetes • Stress Test
+          </span>
+
+          <h1 class="display-5 fw-bold mb-3">
+            <%= title || 'Simulador do Caos' %>
+          </h1>
+
+          <p class="lead text-white-50 mb-0 mx-auto" style="max-width: 760px">
+            Aplicação de exemplo para simular falhas, indisponibilidade, consumo
+            de CPU, consumo de memória e encerramento de processo.
+          </p>
+        </div>
+      </section>
+
+      <section class="pb-5">
+        <div class="row g-4">
+          <div class="col-md-6 col-xl-4">
+            <div class="action-card p-4">
+              <div class="action-icon danger-icon mb-3">💥</div>
+              <h5 class="fw-bold">Quebrar aplicação</h5>
+              <p class="text-white-50">
+                Marca a aplicação como não saudável e passa a retornar erro.
+              </p>
+              <button
+                type="button"
+                class="btn btn-danger w-100"
+                id="breakAppButton"
+              >
+                Quebrar aplicação
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6 col-xl-4">
+            <div class="action-card p-4">
+              <div class="action-icon warning-icon mb-3">⏳</div>
+              <h5 class="fw-bold">Indisponibilidade temporária</h5>
+              <p class="text-white-50">
+                Simula falha de readiness por 60 segundos.
+              </p>
+              <button
+                type="button"
+                class="btn btn-warning w-100"
+                id="unReadyAppButton"
+              >
+                Indisponível por 60s
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6 col-xl-4">
+            <div class="action-card p-4">
+              <div class="action-icon mb-3">🔥</div>
+              <h5 class="fw-bold">Alto consumo de CPU</h5>
+              <p class="text-white-50">
+                Executa stress de CPU dentro do container.
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary w-100"
+                id="stressCPUAppButton"
+              >
+                Estressar CPU
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6 col-xl-4">
+            <div class="action-card p-4">
+              <div class="action-icon mb-3">🧠</div>
+              <h5 class="fw-bold">Alto consumo de memória</h5>
+              <p class="text-white-50">
+                Executa stress de memória na aplicação.
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary w-100"
+                id="stressMemoryAppButton"
+              >
+                Estressar memória
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6 col-xl-4">
+            <div class="action-card p-4">
+              <div class="action-icon success-icon mb-3">✅</div>
+              <h5 class="fw-bold">Encerrar com sucesso</h5>
+              <p class="text-white-50">
+                Finaliza o processo com código de saída 0.
+              </p>
+              <button
+                type="button"
+                class="btn btn-success w-100"
+                id="stressExitOk"
+              >
+                Exit 0
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6 col-xl-4">
+            <div class="action-card p-4">
+              <div class="action-icon danger-icon mb-3">❌</div>
+              <h5 class="fw-bold">Encerrar com erro</h5>
+              <p class="text-white-50">
+                Finaliza o processo com código de saída 1.
+              </p>
+              <button
+                type="button"
+                class="btn btn-outline-danger w-100"
+                id="stressExitErro"
+              >
+                Exit 1
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="container pb-4 text-center">
+      <small>
+        Simulador para testes de health check, readiness probe e consumo de
+        recursos.
+      </small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      const alertPlaceholder = document.getElementById('liveAlertPlaceholder');
+
+      const appendAlert = (message, type) => {
+        const wrapper = document.createElement('div');
+
+        wrapper.innerHTML = [
+          `<div class="alert alert-${type} alert-dismissible fade show shadow" role="alert">`,
+          `  <div>${message}</div>`,
+          '  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
+          '</div>',
+        ].join('');
+
+        alertPlaceholder.append(wrapper);
+
+        setTimeout(() => {
+          wrapper.remove();
+        }, 6000);
+      };
+
+      const requestAction = (selector, url) => {
+        $(selector).click(function (event) {
+          event.preventDefault();
+
+          const button = $(this);
+          const originalText = button.text();
+
+          button.prop('disabled', true).text('Executando...');
+
+          $.ajax({
+            url,
+            type: 'PUT',
+            success: function (data) {
+              appendAlert(data, 'success');
+            },
+            error: function () {
+              appendAlert('Erro ao executar o endpoint.', 'danger');
+            },
+            complete: function () {
+              button.prop('disabled', false).text(originalText);
+            },
+          });
+        });
+      };
+
+      $(document).ready(function () {
+        requestAction('#breakAppButton', '/health/unhealth');
+        requestAction('#unReadyAppButton', '/health/unreadfor/60');
+        requestAction('#stressCPUAppButton', '/health/stress/cpu');
+        requestAction('#stressMemoryAppButton', '/health/stress/memory');
+        requestAction('#stressExitOk', '/health/exit/success');
+        requestAction('#stressExitErro', '/health/exit/fail');
+      });
+    </script>
+  </body>
+</html>
