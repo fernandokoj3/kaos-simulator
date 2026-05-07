@@ -22,8 +22,11 @@ ENV NODE_ENV=production
 
 WORKDIR /usr/src/kaos-simulator
 
-RUN addgroup -S kaos-simulator && \
-    adduser -S kaos-simulator -G kaos-simulator
+RUN apk add --no-cache stress-ng && \
+    addgroup -S kaos-simulator && \
+    adduser -S kaos-simulator -G kaos-simulator && \
+    mkdir -p /tmp/stress-ng && \
+    chown -R kaos-simulator:kaos-simulator /tmp/stress-ng
 
 COPY package*.json ./
 

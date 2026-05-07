@@ -1,13 +1,27 @@
 import { HealthService } from '@/health/health.service';
-import { Controller, Get, Put, Param, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Param,
+  Res,
+  Logger,
+  Body,
+  ValidationPipe,
+} from '@nestjs/common';
 import { Response } from 'express';
-import { exec } from 'child_process';
+import { spawn } from 'node:child_process';
 
 import { HealthResponse } from '@/health/dto/health.response.dto';
 import { plainToInstance } from 'class-transformer';
+import { STRESS_TMP_DIR } from '~shared/app.constants';
+import { StressCpuRequest } from './dto/stress-cpu-request';
+import { StressMemoryRequest } from './dto/stress-memory-request';
 
 @Controller('/health')
 export class HealthController {
+  private LOG = new Logger(HealthController.name);
+
   constructor(private readonly healthService: HealthService) {}
 
   @Put('/exit/success')
@@ -21,15 +35,86 @@ export class HealthController {
   }
 
   @Put('/stress/cpu')
-  public stressCpu(@Query('duration') duration = '30'): string {
-    exec(`stress -c 1k -t ${duration}s`);
-    return `Aplicação em estresse de CPU por ${duration} segundos.`;
+  public stressCpu(
+    @Body(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+      }),
+    )
+    body: StressCpuRequest,
+  ): string {
+    const { workers, load, duration } = body;
+    const child = spawn('stress-ng', [
+      '--cpu',
+      workers.toString(),
+      '--cpu-load',
+      load.toString(),
+      '--timeout',
+      duration.toString(),
+      '--temp-path',
+      STRESS_TMP_DIR,
+    ]);
+
+    child.on('error', (err) => {
+      this.LOG.error(`CPU stress error: ${err}`);
+    });
+
+    child.stdout.on('data', (data) => {
+      this.LOG.log(`PROGRESS: ${data}`);
+    });
+
+    child.stderr.on('data', (data) => {
+      this.LOG.error(`PROGRESS: ${data}`);
+    });
+
+    child.on('close', (code) => {
+      this.LOG.log(`stress CPU finalizado com código: ${code}`);
+    });
+
+    return `Stress CPU iniciado: workers=${workers}, load=${load}%, duration=${duration}s`;
   }
 
   @Put('/stress/memory')
-  public stressMemory(@Query('duration') duration = '30'): string {
-    exec(`stress --vm 1 --vm-bytes 1024M -t ${duration}s`);
-    return `Aplicação em estresse de memória por ${duration} segundos.`;
+  public stressMemory(
+    @Body(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+      }),
+    )
+    body: StressMemoryRequest,
+  ): string {
+    const { workers, memory, duration } = body;
+    const child = spawn('stress-ng', [
+      '--vm',
+      workers.toString(),
+      '--vm-bytes',
+      memory,
+      '--timeout',
+      `${duration}s`,
+      '--vm-keep',
+      '--temp-path',
+      STRESS_TMP_DIR,
+    ]);
+
+    child.on('error', (err) => {
+      this.LOG.error(`Falha ao iniciar stress Memory: ${err}`);
+    });
+
+    child.stdout.on('data', (data) => {
+      this.LOG.log(`PROGRESS: ${data}`);
+    });
+
+    child.stderr.on('data', (data) => {
+      this.LOG.error(`PROGRESS: ${data}`);
+    });
+
+    child.on('close', (code) => {
+      this.LOG.log(`stress Memory finalizado com código: ${code}`);
+    });
+
+    return `Stress Memory iniciado: workers=${workers}, memory=${memory}, duration=${duration}s`;
   }
 
   @Get('/')
